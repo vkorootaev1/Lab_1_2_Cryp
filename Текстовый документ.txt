@@ -1,0 +1,166 @@
+import collections
+import csv
+import math
+import random
+import string
+from collections import Counter
+
+import Crypto.Util.number
+import scipy.special as sc
+
+
+# result = sc.gammaincc(1.5, 0.5)
+# print(result)
+
+# p = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+# print('Первое простое число p: ', p, sep='')
+# q = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+# print('Второе простое число q: ', q, sep='')
+# n = p * q
+# print('Модуль n: ', n, sep='')
+# fi = (p - 1) * (q - 1)
+# print('Функция Эйлера fi:', fi, sep='')
+# x0 = random.randint(2, n - 1)
+# print('Случайное стартовое число x0: ', x0, sep='')
+# # x = x0
+# e = random.randint(2, fi - 1)
+#
+# while math.gcd(e, fi) != 1:
+#     e = random.randint(2, fi - 1)
+#
+# print('e: ', e, sep='')
+
+# Перевод из двоичного массива в число
+def from_bitarray_to_number(bitarr):
+    template_str = ''
+    for i in bitarr:
+        template_str += str(i)
+    num = int(template_str, 2)
+    return num
+
+
+# Алгоритм Криптографического ГПСЧ, основанном на RSA
+def generate_bits_rsa(bits_count):
+    # Генерация 2 256-битных чисел
+    p = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+    q = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+    # Расчет модуля
+    n = p * q
+    # Расчет функции Эйлера
+    fi = (p - 1) * (q - 1)
+    # Генерируем начальное значение
+    x0 = random.randint(2, n - 1)
+    x = x0
+    # Подбираем ключ e
+    e = random.randint(2, fi - 1)
+    while math.gcd(e, fi) != 1:
+        e = random.randint(2, fi - 1)
+    list_of_bits = []
+    # Генерируем биты
+    for i in range(0, bits_count):
+        x = pow(x, e, n)
+        list_of_bits.append(x & 1)
+    return list_of_bits
+
+
+# Функция генерации числа в заданном промежутке
+def random_int(min_value, max_value):
+
+    COUNT_OF_BITS = 32
+    MAX_UINT32 = 4294967295
+    
+    if min_value > max_value:
+        raise 'Неверно заданы границы'
+    if min_value == max_value:
+        return min_value
+    
+    diff = max_value - min_value
+    
+    while True:
+        rand_bits = generate_bits_rsa(COUNT_OF_BITS)
+        rand = from_bitarray_to_number(rand_bits)
+        max_val = 1 + MAX_UINT32
+        remainder = max_val % diff
+        if rand < max_val - remainder:
+            return min_value + (rand % diff)
+
+
+# def a1():
+#     p = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+#     q = Crypto.Util.number.getPrime(256, randfunc=Crypto.Random.get_random_bytes)
+#     n = p * q
+#     fi = (p - 1) * (q - 1)
+#     x0 = random.randint(2, n - 1)
+#     x = x0
+#     e = random.randint(2, fi - 1)
+#     while math.gcd(e, fi) != 1:
+#         e = random.randint(2, fi - 1)
+#     list_of_bits = []
+#     for i in range(0, 7):
+#         x = pow(x, e, n)
+#         list_of_bits.append(x & 1)
+#     template_str = ''
+#     for i in list_of_bits:
+#         template_str += str(i)
+#     rand = int(template_str, 2)
+#     return rand % 101
+
+list_of_nums = []
+for j in range(0, 10000):
+    list_of_nums.append(generate_number())
+
+counter_bits = Counter(list_of_nums)
+counter_bits = collections.OrderedDict(sorted(counter_bits.items()))
+
+with open('output_file1.csv', 'w', newline='') as output:
+    writer = csv.writer(output, delimiter=';')
+    for key, value in counter_bits.items():
+        writer.writerow([key, value])
+#
+# print('Последовательность бит: ', list_of_bits, sep='')
+#
+# counter_bits = Counter(list_of_bits)
+# counter_bits = collections.OrderedDict(sorted(counter_bits.items()))
+# print('Отсортированный список (бит, частота):\n', counter_bits, sep='')
+#
+# with open('output_file.csv', 'w', newline='') as output:
+#     writer = csv.writer(output, delimiter=';')
+#     for key, value in counter_bits.items():
+#         writer.writerow([key, value])
+#
+# with open('output_file1.csv', 'w', newline='') as output:
+#     writer = csv.writer(output, delimiter=';')
+#     for item in list_of_bits:
+#         writer.writerow([item])
+
+
+# list_of_blocks = []
+# size_of_block = 30
+# count_of_blocks = len(list_of_bits) // size_of_block
+#
+# for i in range(0, count_of_blocks):
+#     list_of_blocks.append(list_of_bits[30 * i:30*(i+1)])
+#     print(i+1, ') блок: ', list_of_blocks[i], sep='')
+#
+# list_of_propotrion_ones = []
+# for i in list_of_blocks:
+#     count_of_ones = i.count(1)
+#     list_of_propotrion_ones.append(count_of_ones/size_of_block)
+#
+# print('Количество единиц в каждом блоке от общего количества: ', [round(item, 3) for item in list_of_propotrion_ones], sep='')
+#
+# chi2 = 0
+# for i in list_of_propotrion_ones:
+#     chi2 += pow((i-0.5), 2)
+# chi2 *= 4*size_of_block
+# print(chi2)
+#
+# p_value = sc.gammaincc(count_of_blocks/2, chi2/2)
+# print(p_value)
+#
+# print('Частотный блочный тест пройден!' if p_value > 0.001 else 'Частотный блочный тест провален!')
+#
+# str1 = ''
+# for i in list_of_bits:
+#     str1 += str(i)
+# print(str1)
